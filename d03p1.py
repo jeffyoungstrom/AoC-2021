@@ -10,6 +10,7 @@ class Diagnostic:
     def __init__(self, report_data):
         self.report_data = report_data
         self.report_bits = len(self.report_data[0])
+        self.data_count = len(self.report_data)
         self.data_most_min = len(self.report_data) / 2
         self.bit_frequency = self.get_bit_frequency()
 
@@ -62,34 +63,35 @@ class Diagnostic:
             return default
 
 
-    def get_life_support_rating(self):
-        return self.get_oxygen_generator_rating() * self.get_co2_scrubber_rating()
+def get_life_support_rating(report_data):
+    return get_oxygen_generator_rating(report_data) * get_co2_scrubber_rating(report_data)
 
-    def get_oxygen_generator_rating(self):
-        remaining_data = self.report_data
-        for position in range(self.report_bits):
-            pass_data = []
-            position_most_common = self.get_most_common_value(position, "1")
-            print(f'checking remaining {len(remaining_data)} items for oxygen generator rating')
-            for value in remaining_data:
-                value_bits = [*value]
-                if value_bits[position] == position_most_common:
-                    pass_data.append(value)
-            # see if we're done
-            if len(pass_data) == 1:
-                # found it
-                return int(pass_data[0], 2)
-            else:
-                # keep looking
-                remaining_data = pass_data
-        # didn't narrow down to 1. show what we've got and bail
-        print(f'still have {len(remaining_data)} items after looking for o2 generator rating:')
-        for value in remaining_data:
-            print(f'    {value}')
-        raise ValueError('oxygen generator rating not found')
 
-    def get_co2_scrubber_rating(self):
-        return 7
+def get_oxygen_generator_rating(values):
+    remaining_values = Diagnostic(values)
+    for position in range(remaining_values.report_bits):
+        pass_data = []
+        position_most_common = remaining_values.get_most_common_value(position, "1")
+        print(f'checking remaining {remaining_values.data_count} items for oxygen generator rating')
+        for value in remaining_values.report_data:
+            value_bits = [*value]
+            if value_bits[position] == position_most_common:
+                pass_data.append(value)
+        # see if we're done
+        if len(pass_data) == 1:
+            # found it
+            return int(pass_data[0], 2)
+        else:
+            # keep looking
+            remaining_values = Diagnostic(pass_data)
+    # didn't narrow down to 1. show what we've got and bail
+    print(f'still have {remaining_values.data_count} items after looking for o2 generator rating:')
+    for value in remaining_values.report_data:
+        print(f'    {value}')
+    raise ValueError('oxygen generator rating not found')
+
+def get_co2_scrubber_rating(self):
+    return 1
 
 
 if __name__ == '__main__':
@@ -98,4 +100,4 @@ if __name__ == '__main__':
             '11100', '10000', '11001', '00010', '01010']
     report = Diagnostic(data)
     print(f'd03p1: power consumption {report.get_power_consumption()}')
-    print(f'd03p1: life support rating {report.get_life_support_rating()}')
+    print(f'd03p1: life support rating {get_life_support_rating(data)}')
