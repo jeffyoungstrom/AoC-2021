@@ -9,11 +9,12 @@ def get_data(filename):
 class Diagnostic:
     def __init__(self, report_data):
         self.report_data = report_data
+        self.report_bits = len(self.report_data[0])
         self.data_most_min = len(self.report_data) / 2
         self.bit_frequency = self.get_bit_frequency()
 
     def get_bit_frequency(self):
-        active = [0 for i in range(len(self.report_data[0]))]
+        active = [0 for i in range(self.report_bits)]
 
         for value in self.report_data:
             bits = [*value]
@@ -52,9 +53,49 @@ class Diagnostic:
         return gamma * epsilon
 
 
+    def get_most_common_value(self, i, default):
+        if self.bit_frequency[i] > self.data_most_min:
+            return "1"
+        elif self.bit_frequency[i] < self.data_most_min:
+            return "0"
+        else:
+            return default
+
+
+    def get_life_support_rating(self):
+        return self.get_oxygen_generator_rating() * self.get_co2_scrubber_rating()
+
+    def get_oxygen_generator_rating(self):
+        remaining_data = self.report_data
+        for position in range(self.report_bits):
+            pass_data = []
+            position_most_common = self.get_most_common_value(position, "1")
+            print(f'checking remaining {len(remaining_data)} items for oxygen generator rating')
+            for value in remaining_data:
+                value_bits = [*value]
+                if value_bits[position] == position_most_common:
+                    pass_data.append(value)
+            # see if we're done
+            if len(pass_data) == 1:
+                # found it
+                return int(pass_data[0], 2)
+            else:
+                # keep looking
+                remaining_data = pass_data
+        # didn't narrow down to 1. show what we've got and bail
+        print(f'still have {len(remaining_data)} items after looking for o2 generator rating:')
+        for value in remaining_data:
+            print(f'    {value}')
+        raise ValueError('oxygen generator rating not found')
+
+    def get_co2_scrubber_rating(self):
+        return 7
+
+
 if __name__ == '__main__':
-    data = get_data('d03p1_input.txt')
-    # data = ['00100', '11110', '10110', '10111', '10101', '01111', '00111',
-    #         '11100', '10000', '11001', '00010', '01010']
+    # data = get_data('d03p1_input.txt')
+    data = ['00100', '11110', '10110', '10111', '10101', '01111', '00111',
+            '11100', '10000', '11001', '00010', '01010']
     report = Diagnostic(data)
     print(f'd03p1: power consumption {report.get_power_consumption()}')
+    print(f'd03p1: life support rating {report.get_life_support_rating()}')
